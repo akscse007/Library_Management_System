@@ -1,0 +1,35 @@
+require('dotenv').config();
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const errorHandler = require('./middlewares/errorHandler');
+
+const authRoutes = require('./routes/authRoutes');
+const bookRoutes = require('./routes/bookRoutes');
+const borrowRoutes = require('./routes/borrowRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const fineRoutes = require('./routes/fineRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+
+const app = express();
+connectDB();
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+
+app.use('/api/auth', authRoutes);
+app.use('/api/books', bookRoutes);
+app.use('/api/borrows', borrowRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/fines', fineRoutes);
+app.use('/api/payments', paymentRoutes);
+
+// health
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
