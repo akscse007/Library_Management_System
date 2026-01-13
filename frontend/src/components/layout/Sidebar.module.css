@@ -1,0 +1,3 @@
+.sidebar{width:220px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));}
+.item{display:block;padding:8px 10px;border-radius:8px;color:var(--text);text-decoration:none;margin-bottom:6px}
+.item:hover{background:rgba(0,0,0,0.04)}
