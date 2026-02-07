@@ -24,17 +24,43 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const app = express();
 connectDB();
 
-// Body parsers
+// =========================
+// Body & Cookie Parsers
+// =========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
+
+// =========================
+// CORS CONFIG (FIXED)
+// =========================
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  process.env.CLIENT_URL, // deployed frontend
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // allow server-to-server & tools like Postman
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.error('[CORS BLOCKED]', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Mount routes with audit logging for write operations
+// =========================
+// Routes
+// =========================
 app.use('/api/auth', authRoutes);
 app.use('/api/books', auditLogger('BOOK_OPERATION', 'BOOK'), bookRoutes);
 app.use('/api/borrows', auditLogger('BORROW_OPERATION', 'BORROW'), borrowRoutes);
@@ -43,14 +69,23 @@ app.use('/api/lend-requests', auditLogger('LEND_REQUEST_OPERATION', 'LEND_REQUES
 app.use('/api/fines', auditLogger('FINE_OPERATION', 'FINE'), fineRoutes);
 app.use('/api/payments', auditLogger('PAYMENT_OPERATION', 'PAYMENT'), paymentRoutes);
 app.use('/api/manager', auditLogger('MANAGER_OPERATION', 'USER'), managerRoutes);
-app.use('/api/analytics', analyticsRoutes); // Read-only, no audit needed
+app.use('/api/analytics', analyticsRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+// =========================
+// Health Check
+// =========================
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
 
-// Error handler LAST
+// =========================
+// Error Handler (LAST)
+// =========================
 app.use(errorHandler);
 
+// =========================
+// Server Start
+// =========================
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
